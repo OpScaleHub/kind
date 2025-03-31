@@ -1,38 +1,7 @@
 # kind
 Rebuild Kind with Github image support
 
-Source node Images from GHCR.
-
-
-```bash
-cat <<EOF >kind.config
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-  image: ghcr.io/opscalehub/kind:v1.25.3
-  kubeadmConfigPatches:
-  - |
-    kind: InitConfiguration
-    nodeRegistration:
-      kubeletExtraArgs:
-        node-labels: "ingress-ready=true"
-  extraPortMappings:
-  - containerPort: 80
-    hostPort: 80
-    protocol: TCP
-  - containerPort: 443
-    hostPort: 443
-    protocol: TCP
-- role: worker
-  image: ghcr.io/opscalehub/kind:v1.25.3
-- role: worker
-  image: ghcr.io/opscalehub/kind:v1.25.3
-- role: worker
-  image: ghcr.io/opscalehub/kind:v1.25.3
-EOF
-```
-
+node Images Sourced from GHCR.
 
 ## Kind cluster setup
 howto deploy the kindCluster
