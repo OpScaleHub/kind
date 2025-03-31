@@ -5,7 +5,7 @@ metadata:
   name: cloudflare-api-key
 type: Opaque
 data:
-  api-token: dm01UG5KU0lhVnVDNHhfVjZJU3hWc3hrRTdfN2hVeWpqMHE3elZrelY=
+  api-token: "FEED UR API TOKEN"
 ---
 apiVersion: v1
 kind: ServiceAccount
