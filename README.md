@@ -31,17 +31,6 @@ nodes:
 - role: worker
   image: ghcr.io/opscalehub/kind:v1.25.3
 EOF
-
-kind create cluster --config=kind.config
-kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
-kubectl run whoami --image=docker.io/containous/whoami --port 80 --dry-run=client --output=yaml | kubectl apply -f -
-kubectl expose pod whoami --port=80 --dry-run=client --output=yaml | kubectl apply -f -
-kubectl create ingress whoami --class=nginx --rule=local.opscale.ir/*=whoami:80 --dry-run=client --output=yaml | kubectl apply -f -
-kubectl wait --namespace default --for=condition=ready pod --selector=run=whoami --timeout=120s
-
-sleep 5
-http http://whoami.local.gd/
 ```
 
 
@@ -66,5 +55,8 @@ function kindUp {
   sleep 60
   kubectl create ingress k8s --rule="local.opscale.ir/*=k8s:8080,tls=wildcard-tls-secret" --class=nginx
 
+  sleep 5
+  #http https://whoami.local.gd/
+  http https://local.opscale.ir
 }
 ```
