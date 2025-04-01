@@ -56,3 +56,23 @@ jobs:
         with:
           name: wildcard-tls-secret
           path: wildcard-tls-secret.yaml
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: "renew-certificate-$(date +'%Y%m%d%H%M%S')"
+          release_name: "Renew Certificate - $(date +'%Y-%m-%d %H:%M:%S')"
+          body: "This release contains the renewed wildcard TLS certificate."
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload artifact to release
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: wildcard-tls-secret.yaml
+          asset_name: wildcard-tls-secret.yaml
+          asset_content_type: application/x-yaml
