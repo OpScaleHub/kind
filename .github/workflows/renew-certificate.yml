@@ -1,0 +1,51 @@
+name: Renew Certificate
+
+on:
+  schedule:
+    # Run every week
+    - cron: '0 0 * * 0'
+
+jobs:
+  renew-certificate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Alpine Linux environment
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y alpine-sdk
+
+      - name: Set environment variables
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+        run: |
+          export DOMAIN="local.opscale.ir"
+          echo "dns_cloudflare_api_token = ${API_TOKEN}" > cloudflare.ini
+          chmod 600 cloudflare.ini
+
+      - name: Renew certificate and create Kubernetes secret file
+        env:
+          DOMAIN: "local.opscale.ir"
+        run: |
+          certbot certonly --dns-cloudflare --dns-cloudflare-credentials cloudflare.ini -d "$DOMAIN" -d "*.$DOMAIN" --register-unsafely-without-email --agree-tos --server https://acme-v02.api.letsencrypt.org/directory --non-interactive --logs-dir /etc/letsencrypt/log
+          TLS_CRT=$(cat /etc/letsencrypt/live/"$DOMAIN"/fullchain.pem | base64 -w 0)
+          TLS_KEY=$(cat /etc/letsencrypt/live/"$DOMAIN"/privkey.pem | base64 -w 0)
+          cat <<EOF > wildcard-tls-secret.yaml
+          apiVersion: v1
+          data:
+            tls.crt: $TLS_CRT
+            tls.key: $TLS_KEY
+          kind: Secret
+          metadata:
+            name: wildcard-tls-secret
+          type: Opaque
+          EOF
+
+      - name: Upload Kubernetes secret as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: wildcard-tls-secret
+          path: wildcard-tls-secret.yaml
