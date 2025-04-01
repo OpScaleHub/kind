@@ -2,22 +2,20 @@ name: Renew Certificate
 
 on:
   schedule:
-    # Run every week
-    - cron: '0 0 * * 0'
-  workflow_dispatch:
+    - cron: '0 0 * * 0'  # Runs weekly on Sundays at midnight
 
 jobs:
   renew-certificate:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-      - name: Set up Alpine Linux environment
+      - name: Setup Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y alpine-sdk
+          sudo apt-get install -y build-essential  # Replacing alpine-sdk with build-essential
 
       - name: Set environment variables
         env:
