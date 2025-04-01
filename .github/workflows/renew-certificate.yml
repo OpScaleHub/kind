@@ -16,7 +16,7 @@ jobs:
       - name: Setup Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential  # Replacing alpine-sdk with build-essential
+          sudo apt-get install -y build-essential
 
       - name: Install Certbot
         run: |
@@ -33,11 +33,16 @@ jobs:
 
       - name: Renew certificate and create Kubernetes secret file
         env:
-          DOMAIN: "local.opscale.ir"
+          DOMAIN: ${{ variables.DOMAIN }}
         run: |
           WORK_DIR="/tmp/letsencrypt"
           mkdir -p $WORK_DIR
-          certbot certonly --dns-cloudflare --dns-cloudflare-credentials cloudflare.ini -d "$DOMAIN" -d "*.$DOMAIN" --register-unsafely-without-email --agree-tos --server https://acme-v02.api.letsencrypt.org/directory --config-dir $WORK_DIR --work-dir $WORK_DIR --logs-dir $WORK_DIR
+          echo "The DOMAIN variable is set to $DOMAIN"
+          certbot certonly \
+            --domains "$DOMAIN,*.$DOMAIN" \
+            --register-unsafely-without-email --agree-tos \
+            --dns-cloudflare --dns-cloudflare-credentials cloudflare.ini \
+            --server https://acme-v02.api.letsencrypt.org/directory   # --config-dir $WORK_DIR --work-dir $WORK_DIR --logs-dir $WORK_DIR
           TLS_CRT=$(cat $WORK_DIR/live/"$DOMAIN"/fullchain.pem | base64 -w 0)
           TLS_KEY=$(cat $WORK_DIR/live/"$DOMAIN"/privkey.pem | base64 -w 0)
           cat <<EOF > wildcard-tls-secret.yaml
@@ -56,6 +61,21 @@ jobs:
         with:
           name: wildcard-tls-secret
           path: wildcard-tls-secret.yaml
+
+      - name: Checkout stable branch
+        uses: actions/checkout@v2
+        with:
+          ref: stable
+          fetch-depth: 0
+
+      - name: Update wildcard-tls-secret.yaml in stable branch
+        run: |
+          cp wildcard-tls-secret.yaml .github/workflows/
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git add .github/workflows/wildcard-tls-secret.yaml
+          git commit -m 'Update wildcard-tls-secret.yaml'
+          git push origin stable
 
       - name: Create GitHub Release
         id: create_release
