@@ -4,6 +4,7 @@ on:
   schedule:
     # Run every week
     - cron: '0 0 * * 0'
+  workflow_dispatch:
 
 jobs:
   renew-certificate:
