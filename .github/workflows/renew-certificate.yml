@@ -18,6 +18,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential  # Replacing alpine-sdk with build-essential
 
+      - name: Install Certbot
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y certbot python3-certbot-dns-cloudflare
+
       - name: Set environment variables
         env:
           API_TOKEN: ${{ secrets.API_TOKEN }}
