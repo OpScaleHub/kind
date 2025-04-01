@@ -35,9 +35,11 @@ jobs:
         env:
           DOMAIN: "local.opscale.ir"
         run: |
-          certbot certonly --dns-cloudflare --dns-cloudflare-credentials cloudflare.ini -d "$DOMAIN" -d "*.$DOMAIN" --register-unsafely-without-email --agree-tos --server https://acme-v02.api.letsencrypt.org/directory --non-interactive --logs-dir /etc/letsencrypt/log
-          TLS_CRT=$(cat /etc/letsencrypt/live/"$DOMAIN"/fullchain.pem | base64 -w 0)
-          TLS_KEY=$(cat /etc/letsencrypt/live/"$DOMAIN"/privkey.pem | base64 -w 0)
+          WORK_DIR="/tmp/letsencrypt"
+          mkdir -p $WORK_DIR
+          certbot certonly --dns-cloudflare --dns-cloudflare-credentials cloudflare.ini -d "$DOMAIN" -d "*.$DOMAIN" --register-unsafely-without-email --agree-tos --server https://acme-v02.api.letsencrypt.org/directory --config-dir $WORK_DIR --work-dir $WORK_DIR --logs-dir $WORK_DIR
+          TLS_CRT=$(cat $WORK_DIR/live/"$DOMAIN"/fullchain.pem | base64 -w 0)
+          TLS_KEY=$(cat $WORK_DIR/live/"$DOMAIN"/privkey.pem | base64 -w 0)
           cat <<EOF > wildcard-tls-secret.yaml
           apiVersion: v1
           data:
