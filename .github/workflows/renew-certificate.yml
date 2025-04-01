@@ -2,7 +2,7 @@ name: Renew Certificate
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # Runs weekly on Sundays at midnight
+    - cron: '0 7 * * 0'  # Runs weekly on Sundays at midnight
   workflow_dispatch: # Allows manual triggering of the workflow
 
 jobs:
@@ -26,8 +26,9 @@ jobs:
       - name: Set environment variables
         env:
           API_TOKEN: ${{ secrets.API_TOKEN }}
+          DOMAIN: ${{ vars.DOMAIN }}
         run: |
-          export DOMAIN="local.opscale.ir"
+          export DOMAIN="[ $DOMAIN ]"
           echo "dns_cloudflare_api_token = ${API_TOKEN}" > cloudflare.ini
           chmod 600 cloudflare.ini
 
@@ -42,9 +43,12 @@ jobs:
             --domains "$DOMAIN,*.$DOMAIN" \
             --register-unsafely-without-email --agree-tos \
             --dns-cloudflare --dns-cloudflare-credentials cloudflare.ini \
-            --server https://acme-v02.api.letsencrypt.org/directory   # --config-dir $WORK_DIR --work-dir $WORK_DIR --logs-dir $WORK_DIR
+            --server https://acme-v02.api.letsencrypt.org/directory  \
+            --config-dir $WORK_DIR --work-dir $WORK_DIR --logs-dir $WORK_DIR
+
           TLS_CRT=$(cat $WORK_DIR/live/"$DOMAIN"/fullchain.pem | base64 -w 0)
           TLS_KEY=$(cat $WORK_DIR/live/"$DOMAIN"/privkey.pem | base64 -w 0)
+
           cat <<EOF > wildcard-tls-secret.yaml
           apiVersion: v1
           data:
