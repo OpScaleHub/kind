@@ -85,9 +85,9 @@ jobs:
         id: create_release
         uses: actions/create-release@v1
         with:
-          tag_name: "renew-certificate-$(date +'%Y%m%d%H%M%S')"
-          release_name: "Renew Certificate - $(date +'%Y-%m-%d %H:%M:%S')"
-          body: "This release contains the renewed wildcard TLS certificate."
+          tag_name: v-renew-certificate-$(date +'%Y%m%d%H%M%S')
+          release_name: Renew Certificate - $(date +'%Y-%m-%d %H:%M:%S')
+          body: This release contains the renewed wildcard TLS certificate.
           draft: false
           prerelease: false
         env:
