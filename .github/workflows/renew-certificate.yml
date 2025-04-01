@@ -33,7 +33,7 @@ jobs:
 
       - name: Renew certificate and create Kubernetes secret file
         env:
-          DOMAIN: ${{ variables.DOMAIN }}
+          DOMAIN: ${{ vars.DOMAIN }}
         run: |
           WORK_DIR="/tmp/letsencrypt"
           mkdir -p $WORK_DIR
