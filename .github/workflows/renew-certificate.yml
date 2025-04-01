@@ -72,14 +72,15 @@ jobs:
           ref: stable
           fetch-depth: 0
 
-      # - name: Update wildcard-tls-secret.yaml in stable branch
-      #   run: |
-      #     cp wildcard-tls-secret.yaml .github/workflows/
-      #     git config --global user.name 'GitHub Actions'
-      #     git config --global user.email 'actions@github.com'
-      #     git add .github/workflows/wildcard-tls-secret.yaml
-      #     git commit -m 'Update wildcard-tls-secret.yaml'
-      #     git push origin stable
+      - name: Update wildcard-tls-secret.yaml in stable branch
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git checkout stable
+          cp wildcard-tls-secret.yaml .github/workflows/
+          git add .github/workflows/wildcard-tls-secret.yaml
+          git commit -m 'Update wildcard-tls-secret.yaml'
+          git push origin stable
 
       - name: Create GitHub Release
         id: create_release
