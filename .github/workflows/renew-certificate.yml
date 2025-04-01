@@ -46,7 +46,7 @@ jobs:
           EOF
 
       - name: Upload Kubernetes secret as artifact
-        uses: actions/upload-artifact@v3.1.2
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: wildcard-tls-secret
           path: wildcard-tls-secret.yaml
