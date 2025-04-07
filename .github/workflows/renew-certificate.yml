@@ -60,6 +60,12 @@ jobs:
           type: Opaque
           EOF
 
+      - name: Install Node.js and @octokit/rest
+        uses: actions/setup-node@v2
+        with:
+          node-version: '16.x'
+      - run: npm install @octokit/rest
+
       - name: Get latest stable release
         id: get_latest_release
         uses: actions/github-script@v6
