@@ -19,9 +19,10 @@ curl -L "https://github.com/OpScaleHub/kind/releases/download/stable/wildcard-tl
 kubectl create namespace argocd
 kubectl --namespace argocd apply -f https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/v2.14.8/manifests/core-install.yaml
 
-kubectl wait --namespace argocd        --for=condition=Available deployments --all --timeout=300s
-kubectl wait --namespace ingress-nginx --for=condition=Available deployments --all --timeout=300s
-kubectl wait --namespace ingress-nginx --for=condition=Complete  jobs        --all --timeout=300s
+kubectl wait --timeout=5m --namespace argocd        --for=condition=Available deployments --all
+kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Available deployments --all
+kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Complete  jobs        --all
+kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Ready     pod --selector app.kubernetes.io/component=controller
 
 ###################
 ### Demo time   ###
