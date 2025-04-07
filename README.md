@@ -21,6 +21,7 @@ kubectl --namespace argocd apply -f https://raw.githubusercontent.com/argoproj/a
 
 kubectl wait --namespace argocd        --for=condition=Available deployments --all --timeout=300s
 kubectl wait --namespace ingress-nginx --for=condition=Available deployments --all --timeout=300s
+kubectl wait --namespace ingress-nginx --for=condition=Complete  jobs        --all --timeout=300s
 
 ###################
 ### Demo time   ###
