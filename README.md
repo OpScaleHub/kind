@@ -6,7 +6,6 @@ node Images Sourced from GHCR.
 ## Kind cluster setup
 howto deploy the kindCluster
 
-
 ```bash
 kind create cluster --config ~/Workspaces/github.com/OpScaleHub/kind/clusterConfiguration.yaml
 # deploy Ingress controller
@@ -56,6 +55,4 @@ kubectl describe ingress k8s
 
 # Make the HTTP call
 http https://local.opscale.ir
-
-
 ```
