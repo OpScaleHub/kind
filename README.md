@@ -2,17 +2,42 @@
 
 A customized KinD (Kubernetes in Docker) configuration with GitHub Container Registry (GHCR) integration, ingress-nginx, and ArgoCD support.
 
-## Architecture
+## Architecture Overview
 
 ```mermaid
 graph TD
-    A[KinD Cluster] --> B[Control Plane Node]
-    A --> C[Worker Node 1]
-    A --> D[Worker Node 2]
-    B --> E[ingress-nginx]
-    B --> F[ArgoCD]
-    E --> G[Wildcard TLS Certificate]
-    G --> H[*.local.opscale.ir]
+    subgraph External
+        Client[Client Browser]
+        GHCR[GitHub Container Registry]
+    end
+
+    subgraph KinD["KinD Cluster"]
+        subgraph CP["Control Plane"]
+            API[API Server]
+            ETCD[(etcd)]
+            CM[Controller Manager]
+        end
+
+        subgraph Workers["Worker Nodes"]
+            W1[Worker 1]
+            W2[Worker 2]
+        end
+
+        subgraph Components["Core Components"]
+            ING[Ingress Controller]
+            ARGO[ArgoCD]
+            CERT[TLS Certificate]
+        end
+    end
+
+    Client --> ING
+    ING --> API
+    API --> ETCD
+    API --> W1
+    API --> W2
+    ARGO --> API
+    GHCR --> |Images| CP
+    GHCR --> |Images| Workers
 ```
 
 ## Features
@@ -22,6 +47,63 @@ graph TD
 - 🚀 Pre-configured ingress-nginx controller
 - 📦 Built-in ArgoCD for GitOps
 - 🔄 Weekly certificate renewal
+
+## Certificate Management
+
+```mermaid
+sequenceDiagram
+    participant GH as GitHub Action
+    participant CB as Certbot
+    participant CF as Cloudflare DNS
+    participant LE as Let's Encrypt
+    participant K8S as Kubernetes
+
+    GH->>CB: Trigger weekly renewal
+    CB->>CF: Update DNS records
+    CB->>LE: Request certificate
+    LE-->>CB: Issue certificate
+    CB->>GH: Generate K8S secret
+    GH->>K8S: Apply new certificate
+```
+
+## Deployment Process
+
+```mermaid
+stateDiagram-v2
+    [*] --> CreateCluster
+    CreateCluster --> ConfigureIngress
+    ConfigureIngress --> InstallCert
+    InstallCert --> DeployArgoCD
+    DeployArgoCD --> WaitComponents
+    WaitComponents --> Ready
+    Ready --> [*]
+```
+
+## Network Architecture
+
+```mermaid
+flowchart TB
+    subgraph Internet
+        Client([Client])
+        DNS[DNS Service]
+    end
+
+    subgraph Docker["Docker Network"]
+        subgraph Kind["KinD Cluster Network"]
+            ING[Ingress 80/443]
+            CP[Control Plane]
+            W1[Worker 1]
+            W2[Worker 2]
+        end
+    end
+
+    Client --> |HTTPS| ING
+    Client --> |DNS Query| DNS
+    DNS --> |Resolves| ING
+    ING --> |Routes| CP
+    CP --> |Schedules| W1
+    CP --> |Schedules| W2
+```
 
 ## Quick Start
 
@@ -86,28 +168,6 @@ curl -k https://local.opscale.ir
 - KinD Node Image: `v1.32.3`
 - ingress-nginx: `v1.8.2`
 - ArgoCD: `v2.14.8`
-
-## Architecture Details
-
-```mermaid
-flowchart LR
-    subgraph Cluster
-        CP[Control Plane]
-        W1[Worker 1]
-        W2[Worker 2]
-    end
-    subgraph Services
-        IC[Ingress Controller]
-        ARGO[ArgoCD]
-        CERT[TLS Cert]
-    end
-    Client-->IC
-    IC-->CP
-    CP-->W1
-    CP-->W2
-    ARGO-->CP
-    CERT-->IC
-```
 
 ## Contributing
 
