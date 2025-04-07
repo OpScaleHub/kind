@@ -2,7 +2,7 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 nodes:
 - role: control-plane
-  image: ghcr.io/opscalehub/kind:stable
+  image: ghcr.io/opscalehub/kind:main
   extraPortMappings:
   - containerPort: 80
     hostPort: 80
@@ -11,7 +11,7 @@ nodes:
     hostPort: 443
     protocol: TCP
 - role: worker
-  image: ghcr.io/opscalehub/kind:stable
+  image: ghcr.io/opscalehub/kind:main
 - role: worker
-  image: ghcr.io/opscalehub/kind:stable
+  image: ghcr.io/opscalehub/kind:main
 ...
