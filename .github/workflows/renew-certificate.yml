@@ -72,45 +72,35 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          result-encoding: string
           script: |
-            const { Octokit } = require("@octokit/rest");
-            const octokit = new Octokit({
-              auth: process.env.GITHUB_TOKEN
-            });
-
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
-
+            const { owner, repo } = context.repo;
             try {
-              const latestRelease = await octokit.repos.getLatestRelease({
+              const release = await github.rest.repos.getReleaseByTag({
                 owner,
                 repo,
+                tag: 'stable'
               });
-              console.log(`Latest release: ${latestRelease.data.tag_name}`);
-              return latestRelease.data.tag_name;
+              return release.data.upload_url;
             } catch (error) {
-              console.log("No releases found. Creating initial stable release.");
-              // Create an initial release named "stable"
-              const createReleaseResponse = await octokit.repos.createRelease({
+              const release = await github.rest.repos.createRelease({
                 owner,
                 repo,
                 tag_name: 'stable',
-                name: 'stable',
-                body: 'Initial stable release',
+                name: 'Stable Release',
+                body: 'Stable release for SSL certificates',
                 draft: false,
                 prerelease: false
               });
-              console.log(`Release created: ${createReleaseResponse.data.html_url}`);
-              return 'stable'; // Return the newly created tag name
+              return release.data.upload_url;
             }
 
-      - name: Upload artifact to release
+      - name: Upload certificate to release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.get_latest_release.outputs }}
-          asset_path: wildcard-tls.yaml
+          upload_url: ${{ steps.get_latest_release.outputs.result }}
+          asset_path: ./wildcard-tls.yaml
           asset_name: wildcard-tls.yaml
           asset_content_type: application/x-yaml
-          overwrite: true
