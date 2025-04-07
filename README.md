@@ -56,14 +56,14 @@ sequenceDiagram
     participant CB as Certbot
     participant CF as Cloudflare DNS
     participant LE as Let's Encrypt
-    participant K8S as Kubernetes
+    participant GR as Github Release
 
     GH->>CB: Trigger weekly renewal
     CB->>CF: Update DNS records
     CB->>LE: Request certificate
     LE-->>CB: Issue certificate
     CB->>GH: Generate K8S secret
-    GH->>K8S: Apply new certificate
+    GH->>GR: Publish/Update TLS cert as GH Release Asset
 ```
 
 ## Deployment Process
@@ -145,6 +145,34 @@ kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Ready     po
 ```
 
 ## Demo Application
+
+```mermaid
+graph TD
+    subgraph External
+        Client[Client Browser]
+        DNS[DNS: local.opscale.ir]
+    end
+
+    subgraph KinD["KinD Cluster"]
+        subgraph Ingress["Ingress Layer"]
+            ING[Ingress Controller]
+            TLS[Wildcard TLS Certificate]
+        end
+
+        subgraph App["Demo Application"]
+            SVC[Service: k8s]
+            DEP[Deployment: k8s]
+            POD[Pod: node-hello]
+        end
+    end
+
+    Client -->|HTTPS| DNS
+    DNS -->|Resolves| ING
+    ING -->|TLS Termination| TLS
+    ING -->|Route: /*| SVC
+    SVC -->|Load Balance| DEP
+    DEP -->|Manages| POD
+```
 
 Deploy a sample application to verify the setup:
 
