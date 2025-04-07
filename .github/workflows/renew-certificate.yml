@@ -60,44 +60,51 @@ jobs:
           type: Opaque
           EOF
 
-      # - name: Upload Kubernetes secret as artifact
-      #   uses: actions/upload-artifact@v4.6.2
-      #   with:
-      #     name: wildcard-tls
-      #     path: wildcard-tls.yaml
-
-      # - name: Checkout stable branch
-      #   uses: actions/checkout@v2
-      #   with:
-      #     ref: stable
-      #     fetch-depth: 0
-
-      # - name: Update wildcard-tls.yaml in stable branch
-      #   run: |
-      #     git config --global user.name 'GitHub Actions'
-      #     git config --global user.email 'actions@github.com'
-      #     git checkout stable
-      #     cp wildcard-tls.yaml .github/workflows/
-      #     git add .github/workflows/wildcard-tls.yaml
-      #     git commit -m 'Update wildcard-tls.yaml'
-      #     git push origin stable
-
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: v-renew-certificate-$(date +'%Y%m%d%H%M%S')
-          release_name: Renew Certificate - $(date +'%Y-%m-%d %H:%M:%S')
-          body: This release contains the renewed wildcard TLS certificate.
-          draft: false
-          prerelease: false
+      - name: Get latest stable release
+        id: get_latest_release
+        uses: actions/github-script@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          script: |
+            const { Octokit } = require("@octokit/rest");
+            const octokit = new Octokit({
+              auth: process.env.GITHUB_TOKEN
+            });
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            try {
+              const latestRelease = await octokit.repos.getLatestRelease({
+                owner,
+                repo,
+              });
+              console.log(`Latest release: ${latestRelease.data.tag_name}`);
+              return latestRelease.data.tag_name;
+            } catch (error) {
+              console.log("No releases found. Creating initial stable release.");
+              // Create an initial release named "stable"
+              const createReleaseResponse = await octokit.repos.createRelease({
+                owner,
+                repo,
+                tag_name: 'stable',
+                name: 'stable',
+                body: 'Initial stable release',
+                draft: false,
+                prerelease: false
+              });
+              console.log(`Release created: ${createReleaseResponse.data.html_url}`);
+              return 'stable'; // Return the newly created tag name
+            }
 
       - name: Upload artifact to release
         uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          upload_url: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ steps.get_latest_release.outputs }}
           asset_path: wildcard-tls.yaml
           asset_name: wildcard-tls.yaml
           asset_content_type: application/x-yaml
+          overwrite: true

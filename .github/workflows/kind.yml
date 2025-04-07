@@ -38,3 +38,77 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+
+      - name: Check if Dockerfile changed
+        id: dockerfile_changed
+        run: |
+          git fetch origin main --depth=1
+          if git diff --quiet origin/main HEAD -- Dockerfile; then
+            echo "::set-output name=changed::false"
+            echo "Dockerfile has not changed"
+          else
+            echo "::set-output name=changed::true"
+            echo "Dockerfile has changed"
+          fi
+
+      - name: Create Release
+        id: create_release
+        if: steps.dockerfile_changed.outputs.changed == 'true'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { Octokit } = require("@octokit/rest");
+            const octokit = new Octokit({
+              auth: process.env.GITHUB_TOKEN
+            });
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Get the latest release
+            const latestRelease = await octokit.repos.getLatestRelease({
+              owner,
+              repo,
+            }).catch(() => null);
+
+            let newVersion = 'v0.1.0'; // Default initial version
+            if (latestRelease) {
+              const latestTag = latestRelease.data.tag_name;
+              const versionRegex = /^v(\d+)\.(\d+)\.(\d+)$/;
+              const match = latestTag.match(versionRegex);
+
+              if (match) {
+                let major = parseInt(match[1]);
+                let minor = parseInt(match[2]);
+                let patch = parseInt(match[3]);
+
+                // Increment the patch version
+                patch++;
+                newVersion = `v${major}.${minor}.${patch}`;
+              } else {
+                console.log('Invalid tag format. Using default version increment.');
+                newVersion = 'v0.1.1';
+              }
+            }
+
+            // Create a new release
+            const createReleaseResponse = await octokit.repos.createRelease({
+              owner,
+              repo,
+              tag_name: newVersion,
+              name: newVersion,
+              body: 'Automated release for Dockerfile changes',
+              draft: false,
+              prerelease: false
+            });
+
+            console.log(`Release created: ${createReleaseResponse.data.html_url}`);
+            return newVersion;
+
+      - name: Tag image as stable
+        if: steps.dockerfile_changed.outputs.changed == 'true'
+        uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:stable
