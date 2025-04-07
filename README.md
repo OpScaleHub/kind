@@ -38,7 +38,7 @@ kubectl rollout status deployment k8s
 kubectl expose deployment k8s --port=8080
 
 # Create ingress
-kubectl create ingress k8s --rule="local.opscale.ir/*=k8s:8080,tls=wildcard-tls-secret" --class=nginx
+kubectl create ingress k8s --rule="local.opscale.ir/*=k8s:8080,tls=wildcard-tls" --class=nginx
 
 # Wait for ingress to be available
 kubectl wait --for=condition=available --timeout=60s ingress/k8s
