@@ -7,7 +7,7 @@ node Images Sourced from GHCR.
 howto deploy the kindCluster
 
 ```bash
-kind create cluster --config ~/Workspaces/github.com/OpScaleHub/kind/clusterConfiguration.yaml
+curl "https://raw.githubusercontent.com/OpScaleHub/kind/refs/heads/main/clusterConfiguration.yaml" | kind create cluster --config -
 # deploy Ingress controller
 kubectl label nodes kind-control-plane ingress-ready=true
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/kind/deploy.yaml
