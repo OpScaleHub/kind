@@ -109,7 +109,11 @@ flowchart TB
 
 1. **Create the cluster**
 ```bash
-curl "https://raw.githubusercontent.com/OpScaleHub/kind/refs/heads/main/clusterConfiguration.yaml" | kind create cluster --config -
+# Get latest stable version
+VERSION=$(curl -s "https://raw.githubusercontent.com/OpScaleHub/kind/refs/heads/main/version.txt")
+
+# Create cluster using versioned configuration
+curl -L "https://github.com/OpScaleHub/kind/releases/download/v${VERSION}/clusterConfiguration.yaml" | kind create cluster --config -
 ```
 
 2. **Configure ingress controller**
@@ -123,8 +127,11 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 
 3. **Install TLS certificate**
 ```bash
+# Get latest stable version
+VERSION=$(curl -s "https://raw.githubusercontent.com/OpScaleHub/kind/refs/heads/main/version.txt")
+
 # Deploy wildcard TLS certificate for *.local.opscale.ir
-curl -L "https://github.com/OpScaleHub/kind/releases/download/stable/wildcard-tls.yaml" | kubectl apply -f -
+curl -L "https://github.com/OpScaleHub/kind/releases/download/v${VERSION}/wildcard-tls.yaml" | kubectl apply -f -
 ```
 
 4. **Deploy ArgoCD**
