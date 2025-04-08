@@ -41,8 +41,8 @@ jobs:
           build-args: |
             KIND_VERSION=${{ needs.process-version.outputs.version }}
           tags: |
-            ghcr.io/${{ github.repository }}:v${{ needs.process-version.outputs.version }}
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ toLowerCase(github.repository) }}:v${{ needs.process-version.outputs.version }}
+            ghcr.io/${{ toLowerCase(github.repository) }}:latest
 
       - name: Generate cluster configuration
         run: |
