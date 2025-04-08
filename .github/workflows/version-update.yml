@@ -26,6 +26,12 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Convert repository name to lowercase
+        id: repo-name
+        run: |
+          REPO_LC=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          echo "value=${REPO_LC}" >> $GITHUB_OUTPUT
+
       - name: Login to GHCR
         uses: docker/login-action@v2
         with:
@@ -41,8 +47,8 @@ jobs:
           build-args: |
             KIND_VERSION=${{ needs.process-version.outputs.version }}
           tags: |
-            ghcr.io/${{ toLowerCase(github.repository) }}:v${{ needs.process-version.outputs.version }}
-            ghcr.io/${{ toLowerCase(github.repository) }}:latest
+            ghcr.io/${{ steps.repo-name.outputs.value }}:v${{ needs.process-version.outputs.version }}
+            ghcr.io/${{ steps.repo-name.outputs.value }}:latest
 
       - name: Generate cluster configuration
         run: |
