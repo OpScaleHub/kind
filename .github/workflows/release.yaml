@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    paths:
+      - 'version.txt'
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          VERSION=$(cat version.txt)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Process templates
+        run: |
+          export KIND_VERSION=${{ steps.version.outputs.version }}
+          # Generate the file in a temporary location
+          envsubst < clusterConfiguration.yaml.tmpl > /tmp/clusterConfiguration.yaml
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          build-args: |
+            KIND_VERSION=${{ steps.version.outputs.version }}
+          tags: |
+            ghcr.io/opscalehub/kind:v${{ steps.version.outputs.version }}
+            ghcr.io/opscalehub/kind:latest
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            /tmp/clusterConfiguration.yaml
