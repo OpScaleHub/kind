@@ -190,11 +190,11 @@ Deploy a sample application to verify the setup:
 
 ```bash
 # Create and expose deployment
-kubectl create deployment k8s --port=8080 --image=gcr.io/google-samples/node-hello:1.0
-kubectl expose deployment k8s --port=8080
+kubectl create deployment k8s --port=80 --image=ghcr.io/opscalehub/kind/whoami:main
+kubectl expose deployment k8s --port=80
 
 # Configure ingress
-kubectl create ingress k8s --rule="local.opscale.ir/*=k8s:8080,tls=wildcard-tls" --class=nginx
+kubectl create ingress k8s --rule="local.opscale.ir/*=k8s:80,tls=wildcard-tls" --class=nginx
 
 # Verify deployment
 kubectl wait --for=condition=available --timeout=60s ingress/k8s
