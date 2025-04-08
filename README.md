@@ -134,7 +134,14 @@ VERSION=$(curl -s "https://raw.githubusercontent.com/OpScaleHub/kind/refs/heads/
 curl -L "https://github.com/OpScaleHub/kind/releases/download/v${VERSION}/wildcard-tls.yaml" | kubectl apply -f -
 ```
 
-4. **Deploy ArgoCD**
+4. **Wait for components**
+```bash
+kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Available deployments --all
+kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Complete  jobs        --all
+kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Ready     pod --selector app.kubernetes.io/component=controller
+```
+
+5. **Deploy ArgoCD**
 
 > [!NOTE]
 >
@@ -146,14 +153,7 @@ curl -L "https://github.com/OpScaleHub/kind/releases/download/v${VERSION}/wildca
 kubectl create namespace argocd
 kubectl --namespace argocd apply -f \
   https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/v2.14.8/manifests/core-install.yaml
-```
-
-5. **Wait for components**
-```bash
 kubectl wait --timeout=5m --namespace argocd        --for=condition=Available deployments --all
-kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Available deployments --all
-kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Complete  jobs        --all
-kubectl wait --timeout=5m --namespace ingress-nginx --for=condition=Ready     pod --selector app.kubernetes.io/component=controller
 ```
 
 ## Demo Application
