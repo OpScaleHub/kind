@@ -132,6 +132,7 @@ curl -L "https://github.com/OpScaleHub/kind/releases/download/stable/wildcard-tl
 > [!NOTE]
 >
 > ArgoCD deployment is optional. You can skip this step if you don't need GitOps capabilities.
+>
 > If you choose to deploy ArgoCD, it will be installed with default configuration.
 
 ```bash
