@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '0 7 * * 0'  # Runs weekly on Sundays at midnight
   workflow_dispatch: # Allows manual triggering of the workflow
+  release:
+    types: [published]
 
 jobs:
   renew-certificate:
@@ -11,7 +13,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup Dependencies
         run: |
@@ -66,8 +68,8 @@ jobs:
           node-version: '16.x'
       - run: npm install @octokit/rest
 
-      - name: Get latest stable release
-        id: get_latest_release
+      - name: Get release upload URL
+        id: get_release
         uses: actions/github-script@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -75,6 +77,9 @@ jobs:
           result-encoding: string
           script: |
             const { owner, repo } = context.repo;
+            if (context.eventName === 'release') {
+              return context.payload.release.upload_url;
+            }
             try {
               const release = await github.rest.repos.getReleaseByTag({
                 owner,
@@ -88,7 +93,7 @@ jobs:
                 repo,
                 tag_name: 'stable',
                 name: 'Stable Release',
-                body: 'Stable release for SSL certificates',
+                body: 'Stable release containing SSL certificates',
                 draft: false,
                 prerelease: false
               });
@@ -100,7 +105,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ steps.get_latest_release.outputs.result }}
+          upload_url: ${{ steps.get_release.outputs.result }}
           asset_path: ./wildcard-tls.yaml
           asset_name: wildcard-tls.yaml
           asset_content_type: application/x-yaml
