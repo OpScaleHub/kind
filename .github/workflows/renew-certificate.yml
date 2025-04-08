@@ -77,23 +77,33 @@ jobs:
           result-encoding: string
           script: |
             const { owner, repo } = context.repo;
-            if (context.eventName === 'release') {
-              return context.payload.release.upload_url;
+            let version;
+
+            try {
+              const versionFile = await github.rest.repos.getContent({
+                owner,
+                repo,
+                path: 'version.txt'
+              });
+              version = Buffer.from(versionFile.data.content, 'base64').toString().trim();
+            } catch (error) {
+              version = 'stable';
             }
+
             try {
               const release = await github.rest.repos.getReleaseByTag({
                 owner,
                 repo,
-                tag: 'stable'
+                tag: `v${version}`
               });
               return release.data.upload_url;
             } catch (error) {
               const release = await github.rest.repos.createRelease({
                 owner,
                 repo,
-                tag_name: 'stable',
-                name: 'Stable Release',
-                body: 'Stable release containing SSL certificates',
+                tag_name: `v${version}`,
+                name: `Release v${version}`,
+                body: 'Release containing SSL certificates',
                 draft: false,
                 prerelease: false
               });

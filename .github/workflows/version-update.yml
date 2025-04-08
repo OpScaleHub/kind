@@ -1,0 +1,86 @@
+name: Version Update
+
+on:
+  push:
+    paths:
+      - 'version.txt'
+  workflow_dispatch:
+
+jobs:
+  process-version:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Get Version
+        id: get-version
+        run: |
+          VERSION=$(cat version.txt)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+  build-and-publish:
+    needs: process-version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          build-args: |
+            KIND_VERSION=${{ needs.process-version.outputs.version }}
+          tags: |
+            ghcr.io/${{ github.repository }}:v${{ needs.process-version.outputs.version }}
+            ghcr.io/${{ github.repository }}:latest
+
+      - name: Generate cluster configuration
+        run: |
+          export KIND_VERSION=${{ needs.process-version.outputs.version }}
+          envsubst < clusterConfiguration.yaml.tmpl > clusterConfiguration.yaml
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ needs.process-version.outputs.version }}
+          release_name: Release v${{ needs.process-version.outputs.version }}
+          draft: false
+          prerelease: false
+
+      - name: Upload cluster configuration
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./clusterConfiguration.yaml
+          asset_name: clusterConfiguration.yaml
+          asset_content_type: application/x-yaml
+
+  trigger-cert-renewal:
+    needs: [process-version, build-and-publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger certificate renewal
+        uses: actions/github-script@v6
+        with:
+          script: |
+            await github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'renew-certificate.yml',
+              ref: 'main'
+            })
