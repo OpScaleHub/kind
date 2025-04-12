@@ -65,7 +65,7 @@ This script simplifies the process of creating a local Kubernetes cluster using 
 To run the script and create a KIND cluster with Ingress:
 
 ```bash
-curl -L https://raw.githubusercontent.com/OpScaleHub/kind/main/deploy_kind.sh | bash -
+curl -L https://raw.githubusercontent.com/OpScaleHub/kind/refs/heads/main/deploy.sh | bash -
 ```
 
 ## Certificate Management
