@@ -49,29 +49,24 @@ graph TD
 - 🔄 Weekly certificate renewal
 
 
-
-## Quick deployment
-
-```bash
-# Easy KIND Cluster Setup with Ingress and Optional Argo CD
+## Easy KIND Cluster Setup with Ingress and Optional Argo CD
 
 This script simplifies the process of creating a local Kubernetes cluster using KIND (Kubernetes IN Docker), setting up Ingress-Nginx, and optionally deploying Argo CD. It's designed to be easily run via `curl` and `bash` directly from a raw GitHub URL.
 
-## Prerequisites
+### Prerequisites
 
 * **curl:** For fetching the script and Kubernetes manifests.
 * **bash:** The shell environment to execute the script.
 * **Docker:** KIND runs Kubernetes within Docker containers. Ensure Docker is installed and running on your system.
 * **kubectl:** The Kubernetes command-line tool. Make sure it's installed and configured to interact with your KIND cluster.
 
-## Usage
+### Usage
 
 To run the script and create a KIND cluster with Ingress:
 
 ```bash
 curl -L https://raw.githubusercontent.com/OpScaleHub/kind/main/deploy_kind.sh | bash -
 ```
-
 
 ## Certificate Management
 
@@ -130,7 +125,7 @@ flowchart TB
     CP --> |Schedules| W2
 ```
 
-## Quick Start
+## Step by step deployment
 
 1. **Create the cluster**
 ```bash
