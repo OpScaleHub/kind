@@ -3,7 +3,7 @@
 set -e # Exit immediately if a command exits with a non-zero status.
 
 # Define the base URL for raw GitHub content
-BASE_URL="https://raw.githubusercontent.com/OpScaleHub/kind"
+BASE_URL="https://github.com/OpScaleHub/kind"
 INGRESS_BASE_URL="https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/kind"
 ARGOCD_BASE_URL="https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/v2.14.8/manifests"
 
