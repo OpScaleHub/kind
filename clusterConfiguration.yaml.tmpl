@@ -14,3 +14,7 @@ nodes:
   image: ghcr.io/opscalehub/kind:v${KIND_VERSION}
 - role: worker
   image: ghcr.io/opscalehub/kind:v${KIND_VERSION}
+networking:
+  dns:
+    - 8.8.8.8
+    - 1.1.1.1
