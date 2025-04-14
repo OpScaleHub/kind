@@ -82,10 +82,10 @@ echo "Creating ingress 'k8s'..."
 kubectl create ingress k8s --rule="local.opscale.ir/*=k8s:80,tls=wildcard-tls" --class=nginx
 echo "Ingress 'k8s' created."
 
-# Wait for ingress to be available
-echo "Waiting for ingress 'k8s' to be available..."
-kubectl wait --for=condition=available --timeout=60s ingress/k8s
-echo "Ingress 'k8s' is available."
+# Wait for deployment to be available
+echo "Waiting for deployment 'k8s' to be available..."
+kubectl wait --for=condition=available --timeout=60s deployment/k8s
+echo "Deployment 'k8s' is available."
 
 # Verify resources
 echo ""
@@ -105,7 +105,7 @@ echo ""
 
 # Make the HTTP call (you might need to set up DNS or use host file for local.opscale.ir)
 echo "Attempting to access https://local.opscale.ir..."
-curl -k https://local.opscale.ir
+curl https://local.opscale.ir
 
 echo ""
 echo "--- Demo finished ---"
