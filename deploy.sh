@@ -104,8 +104,20 @@ kubectl describe ingress k8s
 echo ""
 
 # Make the HTTP call (you might need to set up DNS or use host file for local.opscale.ir)
-echo "Attempting to access https://local.opscale.ir..."
-curl https://local.opscale.ir
+SERVICE_URL="https://local.opscale.ir"
+echo "Attempting to access [ ${SERVICE_URL} ] ..."
+
+
+
+
+# Check if the service responds to a HEAD request with a successful status code
+if curl --fail --silent --head --output /dev/null --connect-timeout 5 "${SERVICE_URL}"; then
+    echo "Service is responsive. Proceeding..."
+    curl "${SERVICE_URL}" # Your main curl call
+else
+    echo "Service is NOT responsive. Exiting."
+    exit 1
+fi
 
 echo ""
 echo "--- Demo finished ---"
