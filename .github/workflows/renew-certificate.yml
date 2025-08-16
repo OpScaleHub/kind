@@ -25,15 +25,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y certbot python3-certbot-dns-cloudflare
 
-      - name: Set environment variables
-        env:
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-          DOMAIN: ${{ vars.DOMAIN }}
-        run: |
-          export DOMAIN="[ $DOMAIN ]"
-          echo "dns_cloudflare_api_token = ${API_TOKEN}" > cloudflare.ini
-          chmod 600 cloudflare.ini
-
       - name: Renew certificate and create Kubernetes secret file
         env:
           DOMAIN: ${{ vars.DOMAIN }}
@@ -63,22 +54,37 @@ jobs:
           EOF
 
       - name: Install Node.js and @octokit/rest
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v3
         with:
-          node-version: '16.x'
+          node-version: '20.x'
       - run: npm install @octokit/rest
 
-      - name: Get release upload URL
-        id: get_release
+      - name: Set environment variables
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          DOMAIN: ${{ vars.DOMAIN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "ERROR: API_TOKEN secret is not set." >&2
+            exit 1
+          fi
+          if [ -z "$DOMAIN" ]; then
+            echo "ERROR: DOMAIN variable is not set." >&2
+            exit 1
+          fi
+          export DOMAIN="$DOMAIN"
+          echo "dns_cloudflare_api_token = ${API_TOKEN}" > cloudflare.ini
+          chmod 600 cloudflare.ini
+
+      - name: Get or create release and upload certificate
         uses: actions/github-script@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          result-encoding: string
           script: |
+            const fs = require('fs');
             const { owner, repo } = context.repo;
             let version;
-
             try {
               const versionFile = await github.rest.repos.getContent({
                 owner,
@@ -89,16 +95,15 @@ jobs:
             } catch (error) {
               version = 'stable';
             }
-
+            let release;
             try {
-              const release = await github.rest.repos.getReleaseByTag({
+              release = await github.rest.repos.getReleaseByTag({
                 owner,
                 repo,
                 tag: `v${version}`
               });
-              return release.data.upload_url;
             } catch (error) {
-              const release = await github.rest.repos.createRelease({
+              release = await github.rest.repos.createRelease({
                 owner,
                 repo,
                 tag_name: `v${version}`,
@@ -107,15 +112,19 @@ jobs:
                 draft: false,
                 prerelease: false
               });
-              return release.data.upload_url;
             }
-
-      - name: Upload certificate to release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ steps.get_release.outputs.result }}
-          asset_path: ./wildcard-tls.yaml
-          asset_name: wildcard-tls.yaml
-          asset_content_type: application/x-yaml
+            // Upload asset
+            const assetPath = './wildcard-tls.yaml';
+            if (!fs.existsSync(assetPath)) {
+              throw new Error('wildcard-tls.yaml not found');
+            }
+            const asset = await github.rest.repos.uploadReleaseAsset({
+              url: release.data.upload_url,
+              headers: {
+                'content-type': 'application/x-yaml',
+                'content-length': fs.statSync(assetPath).size
+              },
+              name: 'wildcard-tls.yaml',
+              data: fs.readFileSync(assetPath)
+            });
+            console.log('Asset uploaded:', asset.data.browser_download_url);
