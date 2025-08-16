@@ -25,6 +25,22 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y certbot python3-certbot-dns-cloudflare
 
+      - name: Prepare Cloudflare credentials
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          DOMAIN: ${{ vars.DOMAIN }}
+        run: |
+          if [ -z "$API_TOKEN" ]; then
+            echo "ERROR: API_TOKEN secret is not set." >&2
+            exit 1
+          fi
+          if [ -z "$DOMAIN" ]; then
+            echo "ERROR: DOMAIN variable is not set." >&2
+            exit 1
+          fi
+          echo "dns_cloudflare_api_token = ${API_TOKEN}" > cloudflare.ini
+          chmod 600 cloudflare.ini
+
       - name: Renew certificate and create Kubernetes secret file
         env:
           DOMAIN: ${{ vars.DOMAIN }}
@@ -32,10 +48,11 @@ jobs:
           WORK_DIR="/tmp/letsencrypt"
           mkdir -p $WORK_DIR
           echo "The DOMAIN variable is set to $DOMAIN"
+          cp cloudflare.ini $WORK_DIR/cloudflare.ini
           certbot certonly \
             --domains "$DOMAIN,*.$DOMAIN" \
             --register-unsafely-without-email --agree-tos \
-            --dns-cloudflare --dns-cloudflare-credentials cloudflare.ini \
+            --dns-cloudflare --dns-cloudflare-credentials $WORK_DIR/cloudflare.ini \
             --server https://acme-v02.api.letsencrypt.org/directory  \
             --config-dir $WORK_DIR --work-dir $WORK_DIR --logs-dir $WORK_DIR
 
