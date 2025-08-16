@@ -130,6 +130,21 @@ jobs:
                 prerelease: false
               });
             }
+            // Delete existing asset if present
+            const assets = await github.rest.repos.listReleaseAssets({
+              owner,
+              repo,
+              release_id: release.data.id
+            });
+            const existing = assets.data.find(a => a.name === 'wildcard-tls.yaml');
+            if (existing) {
+              await github.rest.repos.deleteReleaseAsset({
+                owner,
+                repo,
+                asset_id: existing.id
+              });
+              console.log('Deleted existing asset wildcard-tls.yaml');
+            }
             // Upload asset
             const assetPath = './wildcard-tls.yaml';
             if (!fs.existsSync(assetPath)) {
