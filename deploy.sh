@@ -103,17 +103,30 @@ kubectl get ingress k8s
 kubectl describe ingress k8s
 echo ""
 
-# Make the HTTP call (you might need to set up DNS or use host file for local.opscale.ir)
+#!/bin/bash
+
+# Configuration
 SERVICE_URL="https://local.opscale.ir"
-echo "Attempting to access [ ${SERVICE_URL} ] ..."
-# Check if the service responds to a HEAD request with a successful status code
-if curl --fail --silent --head --output /dev/null --connect-timeout 5 "${SERVICE_URL}"; then
-    echo "Service is responsive. Proceeding..."
-    curl "${SERVICE_URL}" # Your main curl call
-else
-    echo "Service is NOT responsive. Exiting."
-    exit 1
-fi
+MAX_ATTEMPTS=10
+SLEEP_INTERVAL=5 # seconds
+
+echo "Attempting to access [ ${SERVICE_URL} ] with a maximum of ${MAX_ATTEMPTS} tries..."
+
+# Loop until curl is successful or max attempts are reached
+for (( i=1; i<=MAX_ATTEMPTS; i++ )); do
+  echo "Attempt ${i} of ${MAX_ATTEMPTS}..."
+  if curl --fail --silent --head --output /dev/null --connect-timeout 5 "${SERVICE_URL}"; then
+    echo "Service is responsive. Proceeding with the main curl call..."
+    curl "${SERVICE_URL}"
+    exit 0 # Exit the script successfully
+  else
+    echo "Service is NOT responsive. Retrying in ${SLEEP_INTERVAL} seconds..."
+    sleep "${SLEEP_INTERVAL}"
+  fi
+done
+
+echo "Failed to connect to the service after ${MAX_ATTEMPTS} attempts. Exiting."
+exit 1
 
 echo ""
 echo "--- Demo finished ---"
