@@ -10,15 +10,6 @@ nodes:
   - containerPort: 443
     hostPort: 443
     protocol: TCP
-  kubeadmConfigPatches:
-  - |
-    kind: ClusterConfiguration
-    apiServer:
-      extraArgs:
-        cert-manager.io/ca-bundle-path: /etc/ssl/certs/ca-certificates.crt
-      extraMounts:
-      - hostPath: /etc/pki/tls/certs/ca-bundle.crt
-        containerPath: /etc/ssl/certs/ca-certificates.crt
 - role: worker
   image: ghcr.io/opscalehub/kind:v${KIND_VERSION}
 - role: worker
