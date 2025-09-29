@@ -1,0 +1,52 @@
+name: Renew Ingress Images
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  schedule:
+    # Runs weekly on Monday at 00:00
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+
+jobs:
+  renew-images:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up yq
+        uses: mikefarah/yq@v4.27.5
+
+      - name: Check for new image digests
+        id: check_images
+        run: |
+          # Controller Image
+          CONTROLLER_IMAGE_NAME=$(yq e '.images[0].name' kind/ingress-nginx/kustomization.yaml)
+          CONTROLLER_CURRENT_TAG=$(yq e '.images[0].newTag' kind/ingress-nginx/kustomization.yaml)
+          CONTROLLER_LATEST_DIGEST=$(skopeo inspect docker://${CONTROLLER_IMAGE_NAME}:${CONTROLLER_CURRENT_TAG} | jq -r '.Digest')
+          
+          # Certgen Image
+          CERTGEN_IMAGE_NAME=$(yq e '.images[1].name' kind/ingress-nginx/kustomization.yaml)
+          CERTGEN_CURRENT_TAG=$(yq e '.images[1].newTag' kind/ingress-nginx/kustomization.yaml)
+          CERTGEN_LATEST_DIGEST=$(skopeo inspect docker://${CERTGEN_IMAGE_NAME}:${CERTGEN_CURRENT_TAG} | jq -r '.Digest')
+
+          echo "::set-output name=controller_latest_digest::$CONTROLLER_LATEST_DIGEST"
+          echo "::set-output name=certgen_latest_digest::$CERTGEN_LATEST_DIGEST"
+
+      - name: Update kustomization.yaml
+        run: |
+          yq e -i ".images[0].newTag = \"${{ steps.check_images.outputs.controller_latest_digest }}\"" kind/ingress-nginx/kustomization.yaml
+          yq e -i ".images[1].newTag = \"${{ steps.check_images.outputs.certgen_latest_digest }}\"" kind/ingress-nginx/kustomization.yaml
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "chore: update ingress-nginx image digests"
+          title: "Update Ingress-Nginx Image Digests"
+          body: |
+            This PR updates the ingress-nginx image digests to the latest versions.
+          branch: "chore/update-ingress-nginx-images"
+          delete-branch: true

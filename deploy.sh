@@ -5,7 +5,6 @@ set -e # Exit immediately if a command exits with a non-zero status.
 # Define the base URL for raw GitHub content
 BASE_URL="https://github.com/OpScaleHub/kind"
 RAW_BASE_URL="https://raw.githubusercontent.com/OpScaleHub/kind"
-INGRESS_BASE_URL="https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.8.2/deploy/static/provider/kind"
 ARGOCD_BASE_URL="https://raw.githubusercontent.com/argoproj/argo-cd/refs/tags/v2.14.8/manifests"
 
 # Check if ARGOCD_ENABLED environment variable is set to "true"
@@ -27,7 +26,7 @@ echo "Control plane node labeled."
 
 # Deploy Ingress-Nginx
 echo "Deploying Ingress-Nginx..."
-kubectl apply -f "${INGRESS_BASE_URL}/deploy.yaml"
+kubectl apply -k https://github.com/OpScaleHub/kind/kind/ingress-nginx?ref=main
 echo "Ingress-Nginx deployment started."
 
 # Apply wildcard TLS certificate
