@@ -1,5 +1,8 @@
 name: Renew Certificate
 
+permissions:
+  contents: write
+
 on:
   # schedule:
   #   - cron: '0 7 * * 0'  # Runs weekly on Sundays at midnight
