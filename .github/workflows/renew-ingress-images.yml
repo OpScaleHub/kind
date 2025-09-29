@@ -23,33 +23,40 @@ jobs:
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Check for new image digests
-        id: check_images
+      - name: Mirror and update images
+        id: mirror_and_update
         run: |
           set -ex
+          
           # Controller Image
-          CONTROLLER_IMAGE_NAME=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newName' kind/ingress-nginx/kustomization.yaml)
-          CONTROLLER_CURRENT_TAG=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newTag' kind/ingress-nginx/kustomization.yaml)
-          echo "CONTROLLER_IMAGE_NAME: ${CONTROLLER_IMAGE_NAME}"
-          echo "CONTROLLER_CURRENT_TAG: ${CONTROLLER_CURRENT_TAG}"
-          CONTROLLER_LATEST_DIGEST=$(skopeo inspect docker://${CONTROLLER_IMAGE_NAME}:${CONTROLLER_CURRENT_TAG} | jq -r '.Digest')
-          echo "CONTROLLER_LATEST_DIGEST: ${CONTROLLER_LATEST_DIGEST}"
+          CONTROLLER_SOURCE_IMAGE=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).name' kind/ingress-nginx/kustomization.yaml)
+          CONTROLLER_DEST_IMAGE=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newName' kind/ingress-nginx/kustomization.yaml)
+          CONTROLLER_TAG=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newTag' kind/ingress-nginx/kustomization.yaml)
+
+          echo "Mirroring controller image..."
+          skopeo copy docker://${CONTROLLER_SOURCE_IMAGE}:${CONTROLLER_TAG} docker://${CONTROLLER_DEST_IMAGE}:${CONTROLLER_TAG}
+          
+          echo "Inspecting mirrored controller image..."
+          CONTROLLER_LATEST_DIGEST=$(skopeo inspect docker://${CONTROLLER_DEST_IMAGE}:${CONTROLLER_TAG} | jq -r '.Digest')
           
           # Certgen Image
-          CERTGEN_IMAGE_NAME=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newName' kind/ingress-nginx/kustomization.yaml)
-          CERTGEN_CURRENT_TAG=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newTag' kind/ingress-nginx/kustomization.yaml)
-          echo "CERTGEN_IMAGE_NAME: ${CERTGEN_IMAGE_NAME}"
-          echo "CERTGEN_CURRENT_TAG: ${CERTGEN_CURRENT_TAG}"
-          CERTGEN_LATEST_DIGEST=$(skopeo inspect docker://${CERTGEN_IMAGE_NAME}:${CERTGEN_CURRENT_TAG} | jq -r '.Digest')
-          echo "CERTGEN_LATEST_DIGEST: ${CERTGEN_LATEST_DIGEST}"
+          CERTGEN_SOURCE_IMAGE=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).name' kind/ingress-nginx/kustomization.yaml)
+          CERTGEN_DEST_IMAGE=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newName' kind/ingress-nginx/kustomization.yaml)
+          CERTGEN_TAG=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newTag' kind/ingress-nginx/kustomization.yaml)
+
+          echo "Mirroring certgen image..."
+          skopeo copy docker://${CERTGEN_SOURCE_IMAGE}:${CERTGEN_TAG} docker://${CERTGEN_DEST_IMAGE}:${CERTGEN_TAG}
+
+          echo "Inspecting mirrored certgen image..."
+          CERTGEN_LATEST_DIGEST=$(skopeo inspect docker://${CERTGEN_DEST_IMAGE}:${CERTGEN_TAG} | jq -r '.Digest')
 
           echo "controller_latest_digest=$CONTROLLER_LATEST_DIGEST" >> $GITHUB_OUTPUT
           echo "certgen_latest_digest=$CERTGEN_LATEST_DIGEST" >> $GITHUB_OUTPUT
 
       - name: Update kustomization.yaml
         run: |
-          yq e -i '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newTag |= "${{ steps.check_images.outputs.controller_latest_digest }}"' kind/ingress-nginx/kustomization.yaml
-          yq e -i '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newTag |= "${{ steps.check_images.outputs.certgen_latest_digest }}"' kind/ingress-nginx/kustomization.yaml
+          yq e -i '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newTag |= "${{ steps.mirror_and_update.outputs.controller_latest_digest }}"' kind/ingress-nginx/kustomization.yaml
+          yq e -i '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newTag |= "${{ steps.mirror_and_update.outputs.certgen_latest_digest }}"' kind/ingress-nginx/kustomization.yaml
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
