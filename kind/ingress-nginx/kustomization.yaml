@@ -5,7 +5,7 @@ resources:
 images:
   - name: registry.k8s.io/ingress-nginx/controller
     newName: ghcr.io/opscalehub/kind/ingress-nginx/controller
-    newTag: v1.8.1
+    newTag: ""
   - name: registry.k8s.io/ingress-nginx/kube-webhook-certgen
     newName: ghcr.io/opscalehub/kind/ingress-nginx/kube-webhook-certgen
-    newTag: v20230407
+    newTag: ""
