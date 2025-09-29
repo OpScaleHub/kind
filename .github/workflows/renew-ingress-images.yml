@@ -37,8 +37,8 @@ jobs:
 
       - name: Update kustomization.yaml
         run: |
-          yq e -i ".images[0].newTag = \"${{ steps.check_images.outputs.controller_latest_digest }}\"" kind/ingress-nginx/kustomization.yaml
-          yq e -i ".images[1].newTag = \"${{ steps.check_images.outputs.certgen_latest_digest }}\"" kind/ingress-nginx/kustomization.yaml
+          yq e -i '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newTag = "${{ steps.check_images.outputs.controller_latest_digest }}"' kind/ingress-nginx/kustomization.yaml
+          yq e -i '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newTag = "${{ steps.check_images.outputs.certgen_latest_digest }}"' kind/ingress-nginx/kustomization.yaml
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v4
