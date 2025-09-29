@@ -17,54 +17,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up yq
-        uses: mikefarah/yq@v4.27.5
+      - name: Install yq
+        run: |
+          sudo wget https://github.com/mikefarah/yq/releases/download/v4.27.5/yq_linux_amd64 -O /usr/bin/yq
+          sudo chmod +x /usr/bin/yq
 
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
 
-      - name: Mirror and update images
-        id: mirror_and_update
+      - name: Mirror images
         run: |
-          set -ex
-          
           # Controller Image
           CONTROLLER_SOURCE_IMAGE=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).name' kind/ingress-nginx/kustomization.yaml)
           CONTROLLER_DEST_IMAGE=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newName' kind/ingress-nginx/kustomization.yaml)
           CONTROLLER_TAG=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newTag' kind/ingress-nginx/kustomization.yaml)
-
-          echo "Mirroring controller image..."
           skopeo copy docker://${CONTROLLER_SOURCE_IMAGE}:${CONTROLLER_TAG} docker://${CONTROLLER_DEST_IMAGE}:${CONTROLLER_TAG}
-          
-          echo "Inspecting mirrored controller image..."
-          CONTROLLER_LATEST_DIGEST=$(skopeo inspect docker://${CONTROLLER_DEST_IMAGE}:${CONTROLLER_TAG} | jq -r '.Digest')
           
           # Certgen Image
           CERTGEN_SOURCE_IMAGE=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).name' kind/ingress-nginx/kustomization.yaml)
           CERTGEN_DEST_IMAGE=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newName' kind/ingress-nginx/kustomization.yaml)
           CERTGEN_TAG=$(yq e '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newTag' kind/ingress-nginx/kustomization.yaml)
-
-          echo "Mirroring certgen image..."
           skopeo copy docker://${CERTGEN_SOURCE_IMAGE}:${CERTGEN_TAG} docker://${CERTGEN_DEST_IMAGE}:${CERTGEN_TAG}
-
-          echo "Inspecting mirrored certgen image..."
-          CERTGEN_LATEST_DIGEST=$(skopeo inspect docker://${CERTGEN_DEST_IMAGE}:${CERTGEN_TAG} | jq -r '.Digest')
-
-          echo "controller_latest_digest=$CONTROLLER_LATEST_DIGEST" >> $GITHUB_OUTPUT
-          echo "certgen_latest_digest=$CERTGEN_LATEST_DIGEST" >> $GITHUB_OUTPUT
-
-      - name: Update kustomization.yaml
-        run: |
-          yq e -i '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/controller")).newTag |= "${{ steps.mirror_and_update.outputs.controller_latest_digest }}"' kind/ingress-nginx/kustomization.yaml
-          yq e -i '(.images[] | select(.name == "registry.k8s.io/ingress-nginx/kube-webhook-certgen")).newTag |= "${{ steps.mirror_and_update.outputs.certgen_latest_digest }}"' kind/ingress-nginx/kustomization.yaml
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "chore: update ingress-nginx image digests"
-          title: "Update Ingress-Nginx Image Digests"
-          body: |
-            This PR updates the ingress-nginx image digests to the latest versions.
-          branch: "chore/update-ingress-nginx-images"
-          delete-branch: true
