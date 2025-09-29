@@ -2,6 +2,7 @@ name: Renew Ingress Images
 permissions:
   contents: write
   pull-requests: write
+  packages: read
 
 on:
   schedule:
@@ -18,6 +19,9 @@ jobs:
 
       - name: Set up yq
         uses: mikefarah/yq@v4.27.5
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | skopeo login ghcr.io -u "${{ github.actor }}" --password-stdin
 
       - name: Check for new image digests
         id: check_images
