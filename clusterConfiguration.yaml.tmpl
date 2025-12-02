@@ -10,6 +10,15 @@ nodes:
   - containerPort: 443
     hostPort: 443
     protocol: TCP
+  kubeadmConfigPatches:
+  - |
+    kind: ClusterConfiguration
+    apiServer:
+      extraArgs:
+        oidc-issuer-url: "https://accounts.google.com"
+        oidc-client-id: "230825114957-rvfm7l47ads6hdd5fs9jid1d4larhv81.apps.googleusercontent.com"
+        oidc-username-claim: "email"
+        oidc-groups-claim: "groups"
 - role: worker
   image: ghcr.io/opscalehub/kind:v${KIND_VERSION}
 - role: worker
