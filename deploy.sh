@@ -24,6 +24,23 @@ echo "Labeling the control plane node..."
 kubectl label nodes kind-control-plane ingress-ready=true
 echo "Control plane node labeled."
 
+# Ensure OIDC admin ClusterRoleBinding exists (idempotent)
+echo "Applying ClusterRoleBinding 'oidc-admin-binding'..."
+kubectl apply -f - <<'EOF'
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oidc-admin-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: User
+  name: "opscalesolution@gmail.com"
+EOF
+echo "ClusterRoleBinding 'oidc-admin-binding' applied."
+
 # Deploy Ingress-Nginx
 echo "Deploying Ingress-Nginx..."
 kubectl apply -k https://github.com/OpScaleHub/kind/kind/ingress-nginx?ref=main
