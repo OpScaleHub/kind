@@ -145,11 +145,21 @@ subjects:
 EOF
 echo "ClusterRoleBinding 'oidc-admin-binding' applied."
 
-# Instruct kubectl to use the kind cluster context with oidc authenticator
+# Set the OIDC secret as an environment variable (Replace YOUR_SECRET with the actual value)
+# Example: export OIDC_CLIENT_SECRET="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"
+# NOTE: Users must obtain the actual secret securely (see section 2)
+
 echo "Setting kubectl context to use oidc authenticator..."
-echo "ensure you have the kubectl-oidc-login plugin installed."
-echo 'kubectl oidc-login setup --oidc-issuer-url=https://accounts.google.com --oidc-client-id=${OIDC_CLIENT_ID} --oidc-client-secret=${OIDC_CLIENT_SECRET} --oidc-extra-scope=email'
-echo 'kubectl kubectl auth whoami --user=oidc'
+echo "Ensure you have the kubectl-oidc-login plugin installed."
+
+kubectl oidc-login setup \
+  --oidc-issuer-url=https://accounts.google.com \
+  --oidc-client-id="${OIDC_CLIENT_ID}" \
+  --oidc-client-secret="${OIDC_CLIENT_SECRET}" \
+  --oidc-extra-scope=email
+
+# Example usage:
+echo 'kubectl auth whoami --user=oidc'
 echo 'kubectl edit clusterrolebindings.rbac.authorization.k8s.io oidc-admin-binding'
 echo "Extend the subjects section (array) to include your OIDC user email if necessary."
 
