@@ -24,23 +24,6 @@ echo "Labeling the control plane node..."
 kubectl label nodes kind-control-plane ingress-ready=true
 echo "Control plane node labeled."
 
-# Ensure OIDC admin ClusterRoleBinding exists (idempotent)
-echo "Applying ClusterRoleBinding 'oidc-admin-binding'..."
-kubectl apply -f - <<'EOF'
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: oidc-admin-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: User
-  name: "opscalesolution@gmail.com"
-EOF
-echo "ClusterRoleBinding 'oidc-admin-binding' applied."
-
 # Deploy Ingress-Nginx
 echo "Deploying Ingress-Nginx..."
 kubectl apply -k https://github.com/OpScaleHub/kind/kind/ingress-nginx?ref=main
@@ -143,6 +126,33 @@ done
 
 echo "Failed to connect to the service after ${MAX_ATTEMPTS} attempts. Exiting."
 exit 1
+
+
+# Ensure OIDC admin ClusterRoleBinding exists (idempotent)
+echo "Applying ClusterRoleBinding 'oidc-admin-binding'..."
+kubectl apply -f - <<'EOF'
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oidc-admin-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: User
+  name: "opscalesolution@gmail.com"
+EOF
+echo "ClusterRoleBinding 'oidc-admin-binding' applied."
+
+# Instruct kubectl to use the kind cluster context with oidc authenticator
+echo "Setting kubectl context to use oidc authenticator..."
+echo "ensure you have the kubectl-oidc-login plugin installed."
+echo 'kubectl oidc-login setup --oidc-issuer-url=https://accounts.google.com --oidc-client-id=230825114957-rvfm7l47ads6hdd5fs9jid1d4larhv81.apps.googleusercontent.com --oidc-client-secret=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 --oidc-extra-scope=email'
+echo 'kubectl kubectl auth whoami --user=oidc'
+echo 'kubectl edit clusterrolebindings.rbac.authorization.k8s.io oidc-admin-binding'
+echo "Extend the subjects section (array) to include your OIDC user email if necessary."
+
 
 echo ""
 echo "--- Demo finished ---"
