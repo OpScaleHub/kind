@@ -24,23 +24,6 @@ echo "Labeling the control plane node..."
 kubectl label nodes kind-control-plane ingress-ready=true
 echo "Control plane node labeled."
 
-# Ensure OIDC admin ClusterRoleBinding exists (idempotent)
-echo "Applying ClusterRoleBinding 'oidc-admin-binding'..."
-kubectl apply -f - <<'EOF'
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: oidc-admin-binding
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-- kind: User
-  name: "opscalesolution@gmail.com"
-EOF
-echo "ClusterRoleBinding 'oidc-admin-binding' applied."
-
 # Deploy Ingress-Nginx
 echo "Deploying Ingress-Nginx..."
 kubectl apply -k https://github.com/OpScaleHub/kind/kind/ingress-nginx?ref=main
@@ -143,6 +126,43 @@ done
 
 echo "Failed to connect to the service after ${MAX_ATTEMPTS} attempts. Exiting."
 exit 1
+
+
+# Ensure OIDC admin ClusterRoleBinding exists (idempotent)
+echo "Applying ClusterRoleBinding 'oidc-admin-binding'..."
+kubectl apply -f - <<'EOF'
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: oidc-admin-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: User
+  name: "opscalesolution@gmail.com"
+EOF
+echo "ClusterRoleBinding 'oidc-admin-binding' applied."
+
+# Set the OIDC secret as an environment variable (Replace YOUR_SECRET with the actual value)
+# Example: export OIDC_CLIENT_SECRET="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"
+# NOTE: Users must obtain the actual secret securely (see section 2)
+
+echo "Setting kubectl context to use oidc authenticator..."
+echo "Ensure you have the kubectl-oidc-login plugin installed."
+
+kubectl oidc-login setup \
+  --oidc-issuer-url=https://accounts.google.com \
+  --oidc-client-id="${OIDC_CLIENT_ID}" \
+  --oidc-client-secret="${OIDC_CLIENT_SECRET}" \
+  --oidc-extra-scope=email
+
+# Example usage:
+echo 'kubectl auth whoami --user=oidc'
+echo 'kubectl edit clusterrolebindings.rbac.authorization.k8s.io oidc-admin-binding'
+echo "Extend the subjects section (array) to include your OIDC user email if necessary."
+
 
 echo ""
 echo "--- Demo finished ---"
